@@ -83,7 +83,7 @@ void print_results(float array[N], int tid, int section)
     printf("\n");
   } /*** end of critical ***/
 
-  // removed this barrier as some threads will not enter the printing of function values
+  // removed this barrier as some threads will not enter the printing of function values and removing this barrier helps to prevent the deadlock
   //#pragma omp barrier
   printf("Thread %d done and synchronized.\n", tid); 
 

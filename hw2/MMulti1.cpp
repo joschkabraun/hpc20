@@ -24,8 +24,28 @@ void MMult0(long m, long n, long k, double *a, double *b, double *c) {
   }
 }
 
+// a is m x k
+// b is k x n -> c is m x n
 void MMult1(long m, long n, long k, double *a, double *b, double *c) {
-  // TODO: See instructions below
+  #pragma omp for
+  for (long j = 0; j < n / BLOCK_SIZE; j++) {
+    for (long p = 0; p < k / BLOCK_SIZE; p++) {
+      for (long i = 0; i < m / BLOCK_SIZE; i++) {
+        
+	//#pragma omp for
+	for (long s = 0; s < BLOCK_SIZE; s++) {
+	  for (long r = 0; r < BLOCK_SIZE; r++) {
+            double tmp = 0.0;
+	    for (long s = 0; s < BLOCK_SIZE; s++) {
+	      //double A_ip = a[i*BLOCK_SIZE ];
+	      tmp += a[i*BLOCK_SIZE+r + (p*BLOCK_SIZE+s)*m] + b[p*BLOCK_SIZE+s + (j*BLOCK_SIZE+s)*k];
+	    }
+	    c[i*BLOCK_SIZE+r + (j*BLOCK_SIZE+s)*m] += tmp;
+	  }   // memory access: 2*m*k*n + 2*m*k*n / BLOCK_SIZE
+	}     // first term describes 2 memory reads in a and b
+      }       // second term comes from 1 mem. read & 1 mem. write which happens m*k*n/BLOCK_SIZE
+    }
+  }
 }
 
 int main(int argc, char** argv) {
@@ -58,9 +78,10 @@ int main(int argc, char** argv) {
       MMult1(m, n, k, a, b, c);
     }
     double time = t.toc();
-    double flops = 0; // TODO: calculate from m, n, k, NREPEATS, time
-    double bandwidth = 0; // TODO: calculate from m, n, k, NREPEATS, time
-    printf("%10d %10f %10f %10f", p, time, flops, bandwidth);
+    double flops = 5.0*m*n*k * NREPEATS / time / 1e9; // as we have NREPEATS of the matrix multiplication and in each function call we have m*n*k for loop calls and each iteration we have 5 floating point operations
+    // the floating point ops: adding 3 pairs of longs together for index access and then adding 2 times two doubles together
+    double bandwidth = (1.0+1.0/BLOCK_SIZE)*m*k*n*NREPEATS / time / 1e9; //see explanation above otherwise we do this calculation NREAPEATS times
+    printf("%10ld %10f %10f %10f", p, time, flops, bandwidth);
 
     double max_err = 0;
     for (long i = 0; i < m*n; i++) max_err = std::max(max_err, fabs(c[i] - c_ref[i]));

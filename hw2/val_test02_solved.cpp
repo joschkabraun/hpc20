@@ -79,7 +79,7 @@ void junk_data ( )
 //  X = { 0, 1, 2, 3, 4, ?a, ?b, ?c, ?d, ?e }.
 //
   
-  // extending the for loop further until the end of the array resolves the problems 
+  // extending the for loop further until the end of the array resolves the problems as otherwise entries would have been accessed which were not initialized
   for ( i = 0; i < 10; i++ )
   {
     x[i] = i;
