@@ -1,0 +1,15 @@
+Question 1:
+
+
+Question 2:
+I chose to change sin4_vec() to improve accuracy.
+
+Regarding the extra credit: I described in the source code how to improve the accuracy given the hints. And I did that for sin4_taylor()
+
+Question 3:
+I used the architecture on the CIMS serves which is AMD Opteron 63xx class CPU which has 1 core. This explains why the computation time gets more with more threads as the overhead increases. I compied with the -o3 flag.
+sequential-scan = 1.704s
+parallel-scan with 1 thread = 2.5594s
+parallel-scan with 2 threads = 2.2593s
+parallel-scan with 4 threads = 2.5861s
+error = 0

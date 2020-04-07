@@ -18,9 +18,10 @@ void scan_omp(long* prefix_sum, const long* A, long n, long p) {
   //int p = omp_get_max_threads();  		// num_threads
   long* pre_part_sum = (long*) calloc(p, sizeof(long));
   long* part_sum = (long*) calloc(p, sizeof(long));
-  //prefix_sum[0] = 0;
+  omp_set_num_threads(p);
+//prefix_sum[0] = 0;
   
-  #pragma omp parralel shared(p, prefix_part_sum, part_sum, np)
+  #pragma omp parralel shared(p, prefix_part_sum, part_sum)
   {
   #pragma omp for
   for (long i = 0; i < p; i++) {
@@ -42,7 +43,7 @@ void scan_omp(long* prefix_sum, const long* A, long n, long p) {
     for (long i = 1; i < p; i++) {
       long l = i*n/p;
       for (long j = l; j < l+n/p; j++) {
-        prefix_sum[j] = prefix_sum[j] + pre_part_sum[j];
+        prefix_sum[j] = prefix_sum[j] + pre_part_sum[i];
       }
     }
   }
@@ -82,6 +83,6 @@ int main() {
   free(A);
   free(B0);
   free(B1);
-  delete thread_nums;
+  //delete thread_nums;
   return 0;
 }
