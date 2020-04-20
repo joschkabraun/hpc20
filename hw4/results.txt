@@ -1,7 +1,8 @@
 Task 1:
-For inner product between two N=4194304 long vectors, I get a CPU bandwidth of 2.499 GB/s and a GPU bandwidth of 4.081 GB/s.
+For inner product between two N=4194304 long vectors, I get a CPU bandwidth of 4.426 GB/s and a GPU bandwidth of 5.788 GB/s.
 The used CPU was: AMD Ryzen Threadripper 2920 12-Core Processor with 2.2 GHz
 The used GPU was: GeForce RTX 2080 Ti
+For matrix vector product with matrix dim MxN and vector dim Nx1 with M=512 and N=82944, I get a CPU bandwidth of 2.789 GB/s and a GPU bandwidth of 8.443 GB/s.
 
 Task 2:
 Using the CPU we have 648 it/s. Using the GPU we have 24993 it/s. The difference of the resulting solutions is 0.
