@@ -2,3 +2,11 @@ Task 1:
 For inner product between two N=4194304 long vectors, I get a CPU bandwidth of 2.499 GB/s and a GPU bandwidth of 4.081 GB/s.
 The used CPU was: AMD Ryzen Threadripper 2920 12-Core Processor with 2.2 GHz
 The used GPU was: GeForce RTX 2080 Ti
+
+Task 2:
+Using the CPU we have 648 it/s. Using the GPU we have 24993 it/s. The difference of the resulting solutions is 0.
+
+Task 3:
+The first part is done. I have submitted one pull request for Jax. An author asked me to do some corrections regarding my code-style to fit the code base. I am waiting for that to be approved.
+In the meantime, I am implementing more numpy functions.
+Furthermore, I have started with working with concurrency in jax and get a feeling for that.

@@ -97,6 +97,26 @@ int main() {
   printf("GPU Bandwith = %f GB/s\n", 1*N*sizeof(double)/(omp_get_wtime()-tt)/1e9);
   printf("Error = %f\n", fabs(sum-sum_ref));
 
+  // matrix vector mult
+  long M = 512;
+
+  double *A, *u, *B, *v;
+  cudaMallocHost((void**) &A, M*N*sizeof(double));
+  cudaMallocHost((void**) &u, N*sizeof(double));
+  cudaMalloc(&B, M*N*sizeof(double));
+  cudaMalloc(&v, N*sizeof(double));
+  #pragma omp parallel for schedule(static)
+  for (long i=0; i<M*N; i++) A[i] = 1.0/(i+1.0);
+  for (long j=0; j<N; j++) y[j] = 2.0/(i+3.0);
+  
+
+  cudaMemcpyAsync(B, A, M*N*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpyAsync(v, u, N*sizeof(double), cudaMemcpyHostToDevice);
+  cudaDeviceSynchronize();
+
+  
+
+
   cudaFree(x_d);
   cudaFree(y_d);
   cudaFree(sum_d);
