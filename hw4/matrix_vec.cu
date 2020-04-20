@@ -1,6 +1,15 @@
 #include <stdio.h>
 #include <algorithm>
 #include <omp.h>
+#include <math.h>
+
+double dist(double const* u, double const* v, long N) {
+  double accum = 0.;
+  for (long i=0; i<N; i++) {
+    accum += (u[i]-v[i]) * (u[i]-v[i]);
+  }
+  return sqrt(accum);
+}
 
 void vec_mul(double* sum_ptr, const double* a, const double* b, long N) {
   double sum = 0.0;
@@ -9,9 +18,14 @@ void vec_mul(double* sum_ptr, const double* a, const double* b, long N) {
   *sum_ptr = sum;
 }
 
-__global__ void vec_el_mul_kernel(double* c, const double* a, const double* b, long N) {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < N) c[idx] = a[idx] * b[idx];
+void mat_vec_mul(double* A_u, const double* A, const double* u, long M, long N) {
+  for (long i=0; i< M; i++) {
+    double Au_ij = 0.;
+    for (long j=0; j< N; j++) {
+      Au_ij += A[i*N+j] * u[j];
+    }
+    A_u[i] = Au_ij;
+  }
 }
 
 #define BLOCK_SIZE 1024
@@ -53,8 +67,8 @@ __global__ void reduction_kernel(double* sum, const double*a, long N) {
 }
 
 int main() {
-  long N = 4*1024*1024;
-  printf("%ld\n", N);
+  long N = 4194304;
+  //printf("%ld\n", N);
 
   double *x, *y;
   cudaMallocHost((void**) &x, N*sizeof(double));
@@ -97,30 +111,82 @@ int main() {
   printf("GPU Bandwith = %f GB/s\n", 1*N*sizeof(double)/(omp_get_wtime()-tt)/1e9);
   printf("Error = %f\n", fabs(sum-sum_ref));
 
-  // matrix vector mult
-  long M = 512;
-
-  double *A, *u, *B, *v;
-  cudaMallocHost((void**) &A, M*N*sizeof(double));
-  cudaMallocHost((void**) &u, N*sizeof(double));
-  cudaMalloc(&B, M*N*sizeof(double));
-  cudaMalloc(&v, N*sizeof(double));
-  #pragma omp parallel for schedule(static)
-  for (long i=0; i<M*N; i++) A[i] = 1.0/(i+1.0);
-  for (long j=0; j<N; j++) y[j] = 2.0/(i+3.0);
-  
-
-  cudaMemcpyAsync(B, A, M*N*sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpyAsync(v, u, N*sizeof(double), cudaMemcpyHostToDevice);
-  cudaDeviceSynchronize();
-
-  
-
-
   cudaFree(x_d);
   cudaFree(y_d);
   cudaFree(sum_d);
   cudaFreeHost(x);
+  
+
+  // matrix vector mult
+  //N = 82944;
+  N=82944;
+  long M = 512;
+
+  N_work = 1;
+  for (long i=(1024+BLOCK_SIZE-1)/BLOCK_SIZE; i>1; i = (i+BLOCK_SIZE-1)/BLOCK_SIZE) N_work += i;
+
+  double *A, *u, *B, *v, *entries, *entries_host, *A_u, *A_v;
+  cudaMallocHost((void**) &A, M*N*sizeof(double));
+  cudaMallocHost((void**) &u, N*sizeof(double));
+  cudaMalloc(&B, M*N*sizeof(double));
+  cudaMalloc(&v, N*sizeof(double));
+  cudaMalloc(&entries, M*N_work*sizeof(double));
+  cudaMallocHost((void**) &entries_host, M*N_work*sizeof(double));
+  cudaMallocHost((void**) &A_u, M*sizeof(double));
+  cudaMallocHost((void**) &A_v, M*sizeof(double));
+  #pragma omp parallel for schedule(static)
+  for (long i=0; i<M*N; i++) A[i] = 1.0/(i+1.0);
+  for (long j=0; j<N; j++) u[j] = 2.0/(j+3.0);
+  //printf("N_work: %ld\n", N_work);
+
+  tt = omp_get_wtime();
+  mat_vec_mul(A_u, A, u, M, N); 
+  printf("CPU Bandwidth for Mat_vec: %f GB/s\n", M*N*sizeof(double) / (omp_get_wtime()-tt)/1e9);
+
+  tt = omp_get_wtime();
+  cudaMemcpyAsync(B, A, M*N*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpyAsync(v, u, N*sizeof(double), cudaMemcpyHostToDevice);
+  cudaDeviceSynchronize();
+
+  long *Nbm;
+  cudaMallocHost((void**) &Nbm, M*sizeof(long));
+  for (long i=0; i<M; i++) Nbm[i] = (N+BLOCK_SIZE-1)/BLOCK_SIZE;
+  for (long m=0; m<M; m++) {
+    vec_dot_kernel<<<Nbm[m],BLOCK_SIZE>>>(&entries[m*N_work], &B[m*N], v, N);
+    while (Nbm[m] > 1) {
+      long N = Nbm[m];
+      Nbm[m] = (Nbm[m]+BLOCK_SIZE-1)/BLOCK_SIZE;
+      reduction_kernel<<<Nbm[m],BLOCK_SIZE>>>(&entries[m*N_work+N], &entries[m*N_work], N);
+    }
+  }
+  cudaMemcpyAsync(&entries_host, entries, M*N*sizeof(double), cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
+  printf("GPU Bandwidth for Mat_vec: %f GB/s\n", M*N*sizeof(double) / (omp_get_wtime()-tt)/1e9);
+
+  for (long i=0; i<M*N_work; i++) {
+    if (entries_host[i]>0.5) {
+      printf("i: %ld, val: %f\n", i, entries_host[i]);
+    }
+  }
+
+  for (long i=0; i<M; i++) {
+    //printf("ent_h: %f\n", entries_host[i*N_work]);
+    A_v[i] = entries_host[i*N_work+64+448];
+  }
+  printf("Error = %f\n", dist(A_u, A_v, M));
+
+  for (long i=0; i<M; i++) {
+    //printf("Au_%ld: %f\nAv_%ld: %f\n",i, A_u[i], i, A_v[i]);
+  }
+
+  cudaFreeHost(A);
+  cudaFreeHost(u);
+  cudaFree(B);
+  cudaFree(v);
+  cudaFree(entries);
+  cudaFreeHost(entries_host);
+  cudaFreeHost(A_u);
+  cudaFreeHost(A_v);
 
   return 0;
 }
