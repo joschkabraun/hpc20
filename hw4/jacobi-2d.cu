@@ -149,7 +149,7 @@ int main() {
   long N_work = 1;
   for (long i= (N*N+BLOCK_SIZE-1)/BLOCK_SIZE; i>1; i = (i+BLOCK_SIZE-1)/BLOCK_SIZE) N_work += i;
   cudaMalloc(&res_d, N_work*sizeof(double));
-  printf("N_work: %ld\n", N_work);
+  //printf("N_work: %ld\n", N_work);
 
 
   tt = omp_get_wtime();
