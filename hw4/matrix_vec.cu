@@ -10,7 +10,7 @@ void vec_mul(double* sum_ptr, const double* a, const double* b, long N) {
 }
 
 __global__ void vec_el_mul_kernel(double* c, const double* a, const double* b, long N) {
-  int idx = blockIdx.x * blockDim.x + threadId.x;
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < N) c[idx] = a[idx] * b[idx];
 }
 
@@ -47,10 +47,14 @@ __global__ void reduction_kernel(double* sum, const double*a, long N) {
     if(threadIdx.x % (2*s) == 0)
       smem[threadIdx.x] += smem[threadIdx.x + s];
      __syncthreads();
+  }
+
+  if (threadIdx.x == 0) sum[blockIdx.x] = smem[threadIdx.x];
 }
 
 int main() {
-  long N = (1UL<<25);
+  long N = 4*1024*1024;
+  printf("%ld\n", N);
 
   double *x, *y;
   cudaMallocHost((void**) &x, N*sizeof(double));
@@ -63,7 +67,7 @@ int main() {
   
   double sum_ref, sum;
   double tt = omp_get_wtime();
-  reduction(&sum_ref, x, y, N);
+  vec_mul(&sum_ref, x, y, N);
   printf("CPU Bandwidth %f GB/s\n", 1*N*sizeof(double) / (omp_get_wtime()-tt)/1e9);
 
   double *x_d, *y_d, *sum_d;

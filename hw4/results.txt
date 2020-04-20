@@ -1,0 +1,4 @@
+Task 1:
+For inner product between two N=4194304 long vectors, I get a CPU bandwidth of 2.499 GB/s and a GPU bandwidth of 4.081 GB/s.
+The used CPU was: AMD Ryzen Threadripper 2920 12-Core Processor with 2.2 GHz
+The used GPU was: GeForce RTX 2080 Ti

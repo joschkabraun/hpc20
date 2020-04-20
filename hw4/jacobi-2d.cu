@@ -1,7 +1,6 @@
 #include <omp.h>
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 void jacobi_cpu(double* u, const double* u0, double h, long N) {
   #pragma omp parallel for schedule(static)
@@ -44,6 +43,16 @@ __global__ void jacobi_kernel(double* u, const double* u0, double h, long N) {
   u[idx] = (h*h + u0[N*(i+1)+j] + u0[N*(i-1)+j] + u0[idx-1] + u0[idx+1]) / 4.0;
 }
 
+__global__ void A_u_kernel(double* res, const double* u, long N, double h) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;  // idx = N*i + j
+  int j = idx % N;
+  int i = (idx - j) / N;
+  
+  if (idx == 0) res[0] = 0.0;
+  else if (idx == N*(N-1) + N-1) res[N*(N-1) + N-1] = 0.0;
+  else res[idx] = (4*u[idx] - u[idx+1] - u[idx-1] - u[N*(i-1)+j] - u[N*(i+1)+j]) / (h*h);
+}
+
 int main() {
   long N = 512;
   long it = 10*3000;
@@ -71,7 +80,7 @@ int main() {
   printf("CPU Jacobi2D\n");
   printf("iteration     residue\n");
   printf("---------------------\n");
-  for (long k=1; k<it+1; k++) {
+  for (long k=1; k<1; k++) {
     cudaMemcpy(u_0, u, N*N*sizeof(double), cudaMemcpyHostToHost);
     jacobi_cpu(u, u_0, h, N);
     
@@ -81,24 +90,29 @@ int main() {
       printf(" %ld      %f\n", k, res);
     }
   }
-  printf("CPU: %f it/min\n\n\n\n", 60.0*it / (omp_get_wtime()-tt));
+  printf("CPU: %f it/s\n\n\n\n", 1.0*it / (omp_get_wtime()-tt));
   
-
-  double tt = omp_get_wtime();
+  double *res_d;
+  cudaMalloc(
+  tt = omp_get_wtime();
   printf("GPU Jacobi2D\n");
   printf("iteration     residue\n");
   printf("---------------------\n");
   for (long k=1; k<it+1; k++) {
+    printf("hi");
     cudaMemcpy(v_0, v, N*N*sizeof(double), cudaMemcpyDeviceToDevice);
+    printf("hi2");
     jacobi_kernel<<<N*N/BLOCK_SIZE, BLOCK_SIZE>>>(v, v_0, h, N);
+    printf("hi3\n");
+    printf("%ld\n",k);
     
     if ((k % 3000) == 0) {
-      calculate_A_times_u(v, A_v, N, h);
-      double res = l2_norm_shift(A_v, 1., N);
+      A_u_kernel<<<N*N/BLOCK_SIZE, BLOCK_SIZE>>>(A_v, v, N, h);
+      double res = l2_norm_shift(A_v, 1., N);   // do this as in other task -> inner vector product
       printf(" %ld      %f\n", k, res);
     }
   }
-  printf("GPU: %f it/min\n", 60.0*it / (omp_get_wtime()-tt));
+  printf("GPU: %f it/s\n", 1.0*it / (omp_get_wtime()-tt));
 
   return 0;
 }
