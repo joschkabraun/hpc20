@@ -141,7 +141,7 @@ int main(int argc, char * argv[]){
 
     /* copy newu to u using pointer flipping */
     lutemp = lu; lu = lunew; lunew = lutemp;
-    if (0 == (iter % 10)) {
+    if ( (iter == max_iters-1) || (0 == (iter % (max_iters/4))) ) {
       gres = compute_residual(lu, lN, invhsq);
       if (0 == mpirank) {
 	printf("Iter %d: Residual: %g\n", iter, gres);
