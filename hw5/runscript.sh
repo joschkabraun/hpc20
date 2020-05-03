@@ -13,5 +13,7 @@
 
 module purge
 module load openmpi/gnu/4.0.2
+rm jacobi_mpi
+mpic++ -o jacobi_mpi jacobi_mpi.cpp
 
-mpiexec -np 16 ./jacobi_mpi 2 10000 16
+mpiexec -np 16 ./jacobi_mpi 2 300 16

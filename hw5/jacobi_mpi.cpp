@@ -73,6 +73,11 @@ int main(int argc, char * argv[]){
   double * lu    = (double *) calloc(sizeof(double), (int) pow(lN+2, 2));
   double * lunew = (double *) calloc(sizeof(double), (int) pow(lN+2, 2));
   double * lutemp;
+  /* Vectors for column transfer throught MPI */
+  double* luleft_in   = (double*) calloc(sizeof(double), lN);
+  double* luright_in  = (double*) calloc(sizeof(double), lN);
+  double* luleft_out  = (double*) calloc(sizeof(double), lN);
+  double* luright_out = (double*) calloc(sizeof(double), lN);
 
   double h = 1.0 / (N + 1);
   double hsq = h * h;
@@ -106,15 +111,30 @@ int main(int argc, char * argv[]){
     if (mpirank % pow2_j != 0) {
       // If not the most left processes, send/recv bdry values to the left /
       for (i = 1; i <= lN; i++) {
-        MPI_Send(&(lunew[i*(lN+2)+1]), 1, MPI_DOUBLE, mpirank-1, 130+2*i, MPI_COMM_WORLD);                   // most left inner line of points
-        MPI_Recv(&(lunew[i*(lN+2)]), 1, MPI_DOUBLE, mpirank-1, 129+2*i, MPI_COMM_WORLD, &status2);           // most left outer line of points
+        luleft_out[i-1] = lunew[i*(lN+2)+1];
+        //MPI_Send(&(lunew[i*(lN+2)+1]), 1, MPI_DOUBLE, mpirank-1, 130+2*i, MPI_COMM_WORLD);                   // most left inner line of points
+        //MPI_Recv(&(lunew[i*(lN+2)]), 1, MPI_DOUBLE, mpirank-1, 129+2*i, MPI_COMM_WORLD, &status2);           // most left outer line of points
+      }
+      MPI_Send(&(luleft_out[0]), lN, MPI_DOUBLE, mpirank-1, 130, MPI_COMM_WORLD);
+      MPI_Recv(&(luleft_in[0]), lN, MPI_DOUBLE, mpirank-1, 129, MPI_COMM_WORLD, &status2);
+
+      for (i = 1; i <= lN; i++) {
+        lunew[i*(lN+2)] = luleft_in[i-1];
       }
     }
-    if (mpirank % pow2_j != 1) {
-      // If not the most rightprocesses, send/recv bdry values to the right /
+    if ( (mpirank+1) % pow2_j != 0) {
+      // If not the most rightprocesses, send/recv bdry values to the right
+
       for (i = 1; i <= lN; i++) {
-        MPI_Send(&(lunew[i*(lN+2)+lN]), 1, MPI_DOUBLE, mpirank+1, 129+2*i, MPI_COMM_WORLD);                     // most right inner line of points
-        MPI_Recv(&(lunew[i*(lN+2)+lN+1]), 1, MPI_DOUBLE, mpirank+1, 130+2*i, MPI_COMM_WORLD, &status3);         // most right outer line of points
+        //MPI_Send(&(lunew[i*(lN+2)+lN]), 1, MPI_DOUBLE, mpirank+1, 129+2*i, MPI_COMM_WORLD);                     // most right inner line of points
+        //MPI_Recv(&(lunew[i*(lN+2)+lN+1]), 1, MPI_DOUBLE, mpirank+1, 130+2*i, MPI_COMM_WORLD, &status3);         // most right outer line of points
+	luright_out[i-1] = lunew[i*(lN+2)+lN];
+      }
+      MPI_Send(&(luright_out[0]), lN, MPI_DOUBLE, mpirank+1, 129, MPI_COMM_WORLD);
+      MPI_Recv(&(luright_in[0]), lN, MPI_DOUBLE, mpirank+1, 130, MPI_COMM_WORLD, &status3);
+
+      for (i = 1; i <= lN; i++) {
+        lunew[i*(lN+2)+1] = luright_in[i-1];
       }
     }
 
@@ -132,6 +152,10 @@ int main(int argc, char * argv[]){
   /* Clean up */
   free(lu);
   free(lunew);
+  free(luright_out);
+  free(luright_in);
+  free(luleft_out);
+  free(luleft_in);
 
   /* timing */
   MPI_Barrier(MPI_COMM_WORLD);
