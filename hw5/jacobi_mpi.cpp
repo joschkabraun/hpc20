@@ -10,11 +10,16 @@
 
 /* compuate global residual, assuming ghost values are updated */
 double compute_residual(double *lu, int lN, double invhsq){
-  int i, k;
+  int i, k, mpirank;
   double tmp, gres = 0.0, lres = 0.0;
 
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+
   for (i = 1; i <= lN; i++){
-    for (k = 1; k <= lN; i++) {
+    for (k = 1; k <= lN; k++) {
+      /*if (mpirank == 0) {
+        printf("i: %d, k: %d\n", i, k);
+      }*/
       tmp = ((4.0*lu[i*(lN+2)+k] - lu[(i-1)*(lN+2)+k] - lu[(i+1)*(lN+2)+k] - lu[i*(lN+2)+k+1] - lu[i*(lN+2)+k-1]) * invhsq - 1);
       lres += tmp * tmp;
     }
@@ -42,7 +47,7 @@ int main(int argc, char * argv[]){
   // read in j for p=4^j
   sscanf(argv[1], "%d", &j);
   sscanf(argv[2], "%d", &max_iters);
-  sscanf(argv[3], "%d", N);
+  sscanf(argv[3], "%d", &N);
 
   /* compute number of unknowns handled by each process */
   lN = (int) N / sqrt(p);
@@ -55,6 +60,10 @@ int main(int argc, char * argv[]){
   if ( (p != (int) pow(4,j)) && mpirank == 0) {
     printf("p: %d, j: %d\n", p, j);
     printf("Exiting. p must be equals 4**j\n");
+  }
+  if (mpirank == 0) {
+    printf("all good\n");
+    printf("p: %d, N: %d, j: %d, lN: %d\n", p, N, j, lN);
   }
   /* timing */
   MPI_Barrier(MPI_COMM_WORLD);
@@ -85,24 +94,24 @@ int main(int argc, char * argv[]){
 
     /* communicate ghost values */
     if (mpirank >= pow2_j) {
-      /* If not the lower processes, send/recv bdry values to the bottom process */
+      // If not the lower processes, send/recv bdry values to the bottom process
       MPI_Send(&(lunew[(lN+2)+1]), lN, MPI_DOUBLE, mpirank-pow2_j, 124, MPI_COMM_WORLD);                    // lowest inner line of points
       MPI_Recv(&(lunew[1]), lN, MPI_DOUBLE, mpirank-pow2_j, 123, MPI_COMM_WORLD, &status);                  // lowest outer line of points
     }
     if (mpirank <= pow2_j*pow2_j - pow2_j - 1) {
-      /* If not the upper processes, send/recv bdry values to the upper process */
+      // If not the upper processes, send/recv bdry values to the upper process
       MPI_Send(&(lunew[lN*(lN+2)+1]), lN, MPI_DOUBLE, mpirank+pow2_j, 123, MPI_COMM_WORLD);                 // highest inner line of poitns
       MPI_Recv(&(lunew[(lN+1)*(lN+2)+1]), lN, MPI_DOUBLE, mpirank+pow2_j, 124, MPI_COMM_WORLD, &status1);   // highest outer line of points
     }
-    if (p % pow2_j != 0) {
-      /* If not the most left processes, send/recv bdry values to the left */
+    if (mpirank % pow2_j != 0) {
+      // If not the most left processes, send/recv bdry values to the left /
       for (i = 1; i <= lN; i++) {
         MPI_Send(&(lunew[i*(lN+2)+1]), 1, MPI_DOUBLE, mpirank-1, 130+2*i, MPI_COMM_WORLD);                   // most left inner line of points
         MPI_Recv(&(lunew[i*(lN+2)]), 1, MPI_DOUBLE, mpirank-1, 129+2*i, MPI_COMM_WORLD, &status2);           // most left outer line of points
       }
     }
-    if (p % pow2_j != 1) {
-      /* If not the most rightprocesses, send/recv bdry values to the right */
+    if (mpirank % pow2_j != 1) {
+      // If not the most rightprocesses, send/recv bdry values to the right /
       for (i = 1; i <= lN; i++) {
         MPI_Send(&(lunew[i*(lN+2)+lN]), 1, MPI_DOUBLE, mpirank+1, 129+2*i, MPI_COMM_WORLD);                     // most right inner line of points
         MPI_Recv(&(lunew[i*(lN+2)+lN+1]), 1, MPI_DOUBLE, mpirank+1, 130+2*i, MPI_COMM_WORLD, &status3);         // most right outer line of points
