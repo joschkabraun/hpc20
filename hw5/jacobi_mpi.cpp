@@ -17,9 +17,6 @@ double compute_residual(double *lu, int lN, double invhsq){
 
   for (i = 1; i <= lN; i++){
     for (k = 1; k <= lN; k++) {
-      /*if (mpirank == 0) {
-        printf("i: %d, k: %d\n", i, k);
-      }*/
       tmp = ((4.0*lu[i*(lN+2)+k] - lu[(i-1)*(lN+2)+k] - lu[(i+1)*(lN+2)+k] - lu[i*(lN+2)+k+1] - lu[i*(lN+2)+k-1]) * invhsq - 1);
       lres += tmp * tmp;
     }
@@ -42,12 +39,12 @@ int main(int argc, char * argv[]){
   char processor_name[MPI_MAX_PROCESSOR_NAME];
   int name_len;
   MPI_Get_processor_name(processor_name, &name_len);
-  printf("Rank %d/%d running on %s.\n", mpirank, p, processor_name);
+  //printf("Rank %d/%d running on %s.\n", mpirank, p, processor_name);
 
   // read in j for p=4^j
   sscanf(argv[1], "%d", &j);
-  sscanf(argv[2], "%d", &max_iters);
-  sscanf(argv[3], "%d", &N);
+  sscanf(argv[2], "%d", &N);
+  sscanf(argv[3], "%d", &max_iters);
 
   /* compute number of unknowns handled by each process */
   lN = (int) N / sqrt(p);
@@ -60,9 +57,9 @@ int main(int argc, char * argv[]){
   if ( (p != (int) pow(4,j)) && mpirank == 0) {
     printf("p: %d, j: %d\n", p, j);
     printf("Exiting. p must be equals 4**j\n");
+    MPI_Abort(MPI_COMM_WORLD, 0);
   }
   if (mpirank == 0) {
-    printf("all good\n");
     printf("p: %d, N: %d, j: %d, lN: %d\n", p, N, j, lN);
   }
   /* timing */
