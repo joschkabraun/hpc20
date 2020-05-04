@@ -1,8 +1,10 @@
+procs1 = [4, 16, 64];
+procs2 = [1, 4, 16, 64];
 
-opirun -np  ./jacobi_mpi 
-opirun -np  ./jacobi_mpi 
-upirun -np  ./jacobi_mpi 
-upirun -np  ./jacobi_mpik scaling study
+procs1_run2 = [4, 16, 64];
+procs2_run2 = [1, 4, 16, 64];
+
+time1 = [0.198677, 0.566894, 1.327216];           % weak scaling study
 time2 = [2.272998, 0.641283, 0.547023, 0.889463];           % strong scaling study
 speedup = max(time2) * time2.^-1;
 idealspeedup = procs2 / min(procs2);
@@ -39,4 +41,4 @@ plotspec4 = 'r--';
 plot(procs2_run2, speedup_run2, plotspec3);
 xlabel('No of processes')
 ylabel('Speedup')
-legend('Speedup Run 1', 'Ideal Speedup Run', 'Speedup Run 2') 
+legend('Speedup Run 1', 'Ideal Speedup Run', 'Speedup Run 2')
