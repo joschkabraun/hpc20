@@ -1,0 +1,49 @@
+p: 4, N: 200, j: 1, lN: 100
+Iter 0: Residual: 200.281
+Iter 2500: Residual: 200.282
+Iter 5000: Residual: 200.282
+Iter 7500: Residual: 200.282
+Iter 9999: Residual: 200.282
+Time elapsed is 0.198662 seconds.
+p: 16, N: 400, j: 2, lN: 100
+Iter 0: Residual: 400.281
+Iter 2500: Residual: 400.282
+Iter 5000: Residual: 400.282
+Iter 7500: Residual: 400.282
+Iter 9999: Residual: 400.282
+Time elapsed is 0.528984 seconds.
+p: 64, N: 800, j: 3, lN: 100
+Iter 0: Residual: 800.281
+Iter 2500: Residual: 800.282
+Iter 5000: Residual: 800.282
+Iter 7500: Residual: 800.282
+Iter 9999: Residual: 800.282
+Time elapsed is 1.062454 seconds.
+p: 1, N: 400, j: 0, lN: 400
+Iter 0: Residual: 400.281
+Iter 2500: Residual: 400.281
+Iter 5000: Residual: 400.281
+Iter 7500: Residual: 400.281
+Iter 9999: Residual: 400.281
+Time elapsed is 2.273759 seconds.
+p: 4, N: 400, j: 1, lN: 200
+Iter 0: Residual: 400.281
+Iter 2500: Residual: 400.282
+Iter 5000: Residual: 400.282
+Iter 7500: Residual: 400.282
+Iter 9999: Residual: 400.282
+Time elapsed is 0.643935 seconds.
+p: 16, N: 400, j: 2, lN: 100
+Iter 0: Residual: 400.281
+Iter 2500: Residual: 400.282
+Iter 5000: Residual: 400.282
+Iter 7500: Residual: 400.282
+Iter 9999: Residual: 400.282
+Time elapsed is 0.560727 seconds.
+p: 64, N: 400, j: 3, lN: 50
+Iter 0: Residual: 400.281
+Iter 2500: Residual: 400.283
+Iter 5000: Residual: 400.283
+Iter 7500: Residual: 400.283
+Iter 9999: Residual: 400.283
+Time elapsed is 0.940972 seconds.

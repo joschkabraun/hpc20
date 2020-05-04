@@ -3,7 +3,7 @@
 #SBATCH --verbose
 #SBATCH --job-name=hpc20-hw5-jacobi2d
 #SBATCH --nodes=8-32
-#SBATCH --tasks-per-node=10
+#SBATCH --tasks-per-node=20
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2GB
 #SBATCH --time=00:20:00
